@@ -9,12 +9,13 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 type Point struct {
 	Index int
-	Value int
-	Name string
+	Value float64
+	Name  string
 }
 
 type PointList []Point
@@ -31,11 +32,24 @@ func main() {
 		sortedByValuePointList PointList
 		validTracks            map[int][]string
 		maxSizeInTrack         int
-		trackNames []string
+		trackNames             []string
 	)
-	csvfile, err := os.Open("input.csv")
+	if len(os.Args) < 3 {
+		fmt.Println("please, specify input and output file names. Example: ./main input.csv output.csv")
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
+		return
+	}
+	if !strings.Contains(os.Args[1], ".csv") {
+		fmt.Println("input must be csv")
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
+	}
+	if !strings.Contains(os.Args[2], ".csv") {
+		fmt.Println("output must be csv")
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
+	}
+	csvfile, err := os.Open(os.Args[1])
 	if err != nil {
-		fmt.Println("input.csv: no such file or directory")
+		fmt.Println(fmt.Sprintf("error creating %s: %s", os.Args[1], err.Error()))
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 		return
 	}
@@ -100,7 +114,7 @@ func main() {
 			min = math.Min(min, f)
 			max = math.Max(max, f)
 		}
-		sortedByValuePointList = append(sortedByValuePointList, Point{Name: trackNames[i], Index: i, Value: int(max / min)})
+		sortedByValuePointList = append(sortedByValuePointList, Point{Name: trackNames[i], Index: i, Value: max / min})
 		validTracks[i] = track[i]
 		if maxSizeInTrack < len(track[i]) {
 			maxSizeInTrack = len(track[i])
@@ -109,9 +123,9 @@ func main() {
 
 	sort.Sort(sortedByValuePointList)
 
-	csvfileWrite, err := os.Create("output.csv")
+	csvfileWrite, err := os.Create(os.Args[2])
 	if err != nil {
-		fmt.Println(fmt.Sprintf("can't create outpur.csv: %s", err.Error()))
+		fmt.Println(fmt.Sprintf("can't create %s: %s", os.Args[2], err.Error()))
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 		return
 	}
@@ -120,9 +134,10 @@ func main() {
 	defer writer.Flush()
 
 	writer.Comma = '\t'
-	sortedNames := make([]string, len(sortedByValuePointList))
+	sortedNames := make([]string, len(sortedByValuePointList)+1)
+	sortedNames[0] = "Time"
 	for j, point := range sortedByValuePointList {
-		sortedNames[j] = point.Name
+		sortedNames[j+1] = point.Name
 	}
 	err = writer.Write(sortedNames)
 	if err != nil {
@@ -132,9 +147,10 @@ func main() {
 	}
 
 	for i := 0; i < maxSizeInTrack; i++ {
-		transparentTracks := make([]string, len(sortedByValuePointList))
+		transparentTracks := make([]string, len(sortedByValuePointList)+1)
+		transparentTracks[0] = strconv.Itoa(i)
 		for j, point := range sortedByValuePointList {
-			transparentTracks[j] = validTracks[point.Index][i]
+			transparentTracks[j+1] = validTracks[point.Index][i]
 		}
 
 		err = writer.Write(transparentTracks)
@@ -144,9 +160,10 @@ func main() {
 			return
 		}
 	}
-	sortedValues := make([]string, len(sortedByValuePointList))
+	sortedValues := make([]string, len(sortedByValuePointList)+1)
+	sortedValues[0] = "Max/Min"
 	for j, point := range sortedByValuePointList {
-		sortedValues[j] = strconv.Itoa(point.Value)
+		sortedValues[j+1] = fmt.Sprintf("%.2f", point.Value)
 	}
 	err = writer.Write(sortedValues)
 	if err != nil {
@@ -154,5 +171,4 @@ func main() {
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 		return
 	}
-
 }
