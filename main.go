@@ -9,7 +9,6 @@ import (
 	"os"
 	"sort"
 	"strconv"
-	"strings"
 )
 
 type Point struct {
@@ -24,6 +23,7 @@ func (p PointList) Len() int           { return len(p) }
 func (p PointList) Less(i, j int) bool { return p[i].Value < p[j].Value }
 func (p PointList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
+func (p PointList) Reverse(i, j int) { p[i], p[j] = p[j], p[i] }
 func main() {
 	var (
 		track                  [][]string
@@ -38,14 +38,6 @@ func main() {
 		fmt.Println("please, specify input and output file names. Example: ./main input.csv output.csv")
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 		return
-	}
-	if !strings.Contains(os.Args[1], ".csv") {
-		fmt.Println("input must be csv")
-		bufio.NewReader(os.Stdin).ReadBytes('\n')
-	}
-	if !strings.Contains(os.Args[2], ".csv") {
-		fmt.Println("output must be csv")
-		bufio.NewReader(os.Stdin).ReadBytes('\n')
 	}
 	csvfile, err := os.Open(os.Args[1])
 	if err != nil {
@@ -123,6 +115,8 @@ func main() {
 
 	sort.Sort(sortedByValuePointList)
 
+	sortedByValuePointList = reverse(sortedByValuePointList)
+
 	csvfileWrite, err := os.Create(os.Args[2])
 	if err != nil {
 		fmt.Println(fmt.Sprintf("can't create %s: %s", os.Args[2], err.Error()))
@@ -171,4 +165,15 @@ func main() {
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 		return
 	}
+}
+
+func reverse(points PointList) PointList {
+	count := len(points)
+	newPoints := make(PointList, count)
+
+	for i := range points {
+		newPoints[i] = points[count-1-i]
+	}
+
+	return newPoints
 }
